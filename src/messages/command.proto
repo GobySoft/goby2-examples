@@ -1,0 +1,12 @@
+import "dccl/protobuf/option_extensions.proto";
+
+message AUVCommand
+{
+    option (dccl.msg) = { id: 125 max_bytes: 32 unit_system: "si" };
+    
+
+    required double waypoint_x = 1 [(dccl.field) = { min: -10000 max: 10000 precision: 1 units { derived_dimensions: "length" } }];
+    required double waypoint_y = 2 [(dccl.field) = { min: -10000 max: 10000 precision: 1 units { derived_dimensions: "length" } }];
+    required double survey_depth = 3 [(dccl.field) = { min: 0 max: 5000 precision: 0 units { derived_dimensions: "length" } }];
+    optional double speed = 4 [(dccl.field) = { min: 0 max: 5 precision: 0 units { unit: "metric::knot" } }];
+}
