@@ -1,0 +1,7 @@
+add_executable(goby_ex_topside_acomms comms.cpp)
+target_compile_definitions(goby_ex_topside_acomms PRIVATE -DTOPSIDE)
+target_link_libraries(goby_ex_topside_acomms goby_acomms example_messages)
+
+add_executable(goby_ex_vehicle_acomms comms.cpp)
+target_compile_definitions(goby_ex_vehicle_acomms PRIVATE -DVEHICLE)
+target_link_libraries(goby_ex_vehicle_acomms goby_acomms example_messages)
