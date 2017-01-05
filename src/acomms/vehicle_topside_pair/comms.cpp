@@ -297,7 +297,11 @@ void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& msg)
             break;
     }
 
-    std::cout << "Rx stats: " << msg.GetExtension(benthos::protobuf::receive_stat).ShortDebugString() << std::endl;
+    if(msg.HasExtension(benthos::protobuf::receive_stat))
+    {
+        const benthos::protobuf::ReceiveStatistics& rx_stat = msg.GetExtension(benthos::protobuf::receive_stat);
+        std::cout << "Rx stats: " << rx_stat.ShortDebugString() << std::endl;
+    }
     
 }
 
