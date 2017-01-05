@@ -271,7 +271,7 @@ void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& msg)
 {
     switch(msg.type())
     {
-        default: return;
+        default: break;
         case goby::acomms::protobuf::ModemTransmission::DATA:
             if(msg.frame_size() != 1)
             {
@@ -296,6 +296,8 @@ void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& msg)
             std::cout << ">> Received ACK" << std::endl;
             break;
     }
+
+    std::cout << "Rx stats: " << msg.GetExtension(benthos::protobuf::receive_stat).ShortDebugString() << std::endl;
     
 }
 
