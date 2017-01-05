@@ -36,16 +36,18 @@ const int my_id = topside_id;
 #ifdef VEHICLE
 const int my_id = vehicle_id;
 #endif
-    
+
+// for UDPDriver
+boost::shared_ptr<boost::asio::io_service> asio_service;    
     
 dccl::Codec dccl_codec;
 
 int main(int argc, char* argv[])
 {
-    if(argc != 3) return startup_failure(argv[0]);
+    if(argc != 4) return startup_failure(argv[0]);
 
     std::string serial_port = argv[1];
-    std::string log_file = argv[2];
+    std::string log_file = argv[3];
     std::ofstream fout(log_file.c_str());
     if(!fout.is_open())
     {
@@ -66,8 +68,22 @@ int main(int argc, char* argv[])
     //
     boost::scoped_ptr<goby::acomms::ModemDriverBase> driver;
     // hard coded here, but could be read by configuration file or command line
-    goby::acomms::protobuf::DriverType driver_type =
-        goby::acomms::protobuf::DRIVER_BENTHOS_ATM900;
+    goby::acomms::protobuf::DriverType driver_type;
+
+    if(!goby::acomms::protobuf::DriverType_Parse(argv[2], &driver_type))
+    {
+        std::cerr << "Invalid DRIVER_TYPE_ENUM " << argv[2] << std::endl;
+        std::cerr << "Valid options are: ";
+        for(int i = goby::acomms::protobuf::DriverType_MIN+1, n = goby::acomms::protobuf::DriverType_MAX; i <= n; ++i)
+        {
+            if(goby::acomms::protobuf::DriverType_IsValid(i))
+                std::cerr << goby::acomms::protobuf::DriverType_Name(static_cast<goby::acomms::protobuf::DriverType>(i)) << std::endl;
+        }
+        
+        return startup_failure(argv[0]);
+    }
+    
+        
     switch(driver_type)
     {
         default:
@@ -81,10 +97,15 @@ int main(int argc, char* argv[])
         case goby::acomms::protobuf::DRIVER_BENTHOS_ATM900:
             driver.reset(new goby::acomms::BenthosATM900Driver);
             break;
+
+        case goby::acomms::protobuf::DRIVER_UDP:
+            asio_service.reset(new boost::asio::io_service);
+            driver.reset(new goby::acomms::UDPDriver(asio_service.get()));
+            break;
     }
     
+    
     goby::acomms::MACManager mac;
-
 
     //
     // Connect slots
@@ -125,6 +146,7 @@ int main(int argc, char* argv[])
         case goby::acomms::protobuf::DRIVER_BENTHOS_ATM900:
             topside_slot.set_rate(3);
             break;
+
     }    
     topside_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     topside_slot.set_slot_seconds(20);
@@ -159,6 +181,17 @@ int main(int argc, char* argv[])
             break;
 
         case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
+            break;
+            
+        case goby::acomms::protobuf::DRIVER_UDP:
+#ifdef TOPSIDE
+            driver_cfg.MutableExtension(UDPDriverConfig::local)->set_port(50001);
+            driver_cfg.MutableExtension(UDPDriverConfig::remote)->set_port(50002);
+#endif
+#ifdef VEHICLE
+            driver_cfg.MutableExtension(UDPDriverConfig::local)->set_port(50002);
+            driver_cfg.MutableExtension(UDPDriverConfig::remote)->set_port(50001);
+#endif
             break;
     }
 
@@ -205,7 +238,7 @@ int main(int argc, char* argv[])
 
 int startup_failure(const char* name)
 {
-    std::cerr << "usage: " << name << "  /dev/tty_modem_A debug_log_file" << std::endl;
+    std::cerr << "usage: " << name << "  /dev/tty_modem_A DRIVER_TYPE_ENUM debug_log_file" << std::endl;
     return 1;
 }
 
